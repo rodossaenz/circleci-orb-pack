@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   # Replace this with your own!
   my-orb: rodossaenz/myip@<<pipeline.parameters.dev-orb-version>>
+  cli: circleci/circleci-cli@0.1.9
   orb-tools: circleci/orb-tools@10.0
 
 # Pipeline Parameters
