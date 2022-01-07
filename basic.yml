@@ -1,0 +1,21 @@
+version: 2.1
+commands:
+    get:
+        steps:
+            - run: echo "get"
+    echo:
+        steps:
+            - run: echo "echo"
+executors:
+    default:
+        description: |
+            This is a sample executor using Docker and Node.
+        docker:
+            - image: cimg/base:stable
+jobs:
+    hello:
+        docker:
+            - image: cimg/base:stable
+        steps:
+            - get
+            - echo
