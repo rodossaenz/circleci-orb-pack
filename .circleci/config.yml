@@ -1,0 +1,95 @@
+version: 2.1
+
+orbs:
+  # Replace this with your own!
+  my-orb: rodossaenz/myip@<<pipeline.parameters.dev-orb-version>>
+  orb-tools: circleci/orb-tools@10.0
+
+# Pipeline Parameters
+## These parameters are used internally by orb-tools. Skip to the Jobs section.
+parameters:
+  run-integration-tests:
+    description: An internal flag to prevent integration test from running before a development version has been created.
+    type: boolean
+    default: false
+  dev-orb-version:
+    description: >
+      The development version of the orb to test.
+      This value is automatically adjusted by the "trigger-integration-tests-workflow" job to correspond with the specific version created by the commit and should not be edited.
+      A "dev:alpha" version must exist for the initial pipeline run.
+    type: string
+    default: "dev:alpha"
+
+jobs:
+  initialize:
+    executor: cli/default
+    steps:
+      - checkout
+      #- cli/install
+      - cli/setup:
+          token: CIRCLE_TOKEN
+      - run:
+          name: CircleCI Create Namespace
+          command: bash -c "circleci namespace create $NAMESPACE $VCS_TYPE $VCS_ORG --no-prompt; if [[ \$? -eq 0 ]] ; then exit 1 ; else exit 0 ; fi"
+      - run:
+          name: CircleCI Create Private Orb
+          command: bash -c "circleci orb create $NAMESPACE/$ORB_NAME --private --no-prompt; if [[ \$? -eq 0 ]] ; then exit 1 ; else exit 0 ; fi"
+      - run:
+          name: CircleCI Publish Orb Dev Version
+          command: circleci orb publish workspace/orb.yml $NAMESPACE/$ORB_NAME@<<pipeline.parameters.dev-orb-version>>
+  integration-test-1:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - my-orb/get
+
+workflows:
+  publish-dev-workflow:
+    unless: << pipeline.parameters.run-integration-tests >>
+    jobs:
+      - initialize:
+          context: orb-publishing
+      - orb-tools/lint:
+          requires:
+            - initialize
+      - orb-tools/pack:
+          requires:
+            - orb-tools/lint
+      - orb-tools/publish-dev:
+          orb-name: $NAMESPACE/$ORB_NAME
+          checkout: true
+          context: orb-publishing
+          requires:
+            - orb-tools/pack
+      - orb-tools/trigger-integration-tests-workflow:
+          context: orb-publishing
+          requires:
+            - orb-tools/publish-dev
+
+  integration-test_deploy:
+    when: << pipeline.parameters.run-integration-tests >>
+    jobs:
+      - integration-test-1
+      - my-orb/hello:
+          requires:
+            - integration-test-1
+      # Publish a semver version of the orb. relies on
+      # the commit subject containing the text "[semver:patch|minor|major|skip]"
+      # as that will determine whether a patch, minor or major
+      # version will be published or if publishing should
+      # be skipped.
+      # e.g. [semver:patch] will cause a patch version to be published.
+      - orb-tools/dev-promote-prod-from-commit-subject:
+          orb-name: $NAMESPACE/$ORB_NAME
+          context: orb-publishing
+          add-pr-comment: false
+          fail-if-semver-not-indicated: true
+          publish-version-tag: false
+          requires:
+            - integration-test-1
+            - my-orb/hello
+          filters:
+            branches:
+              only:
+                - master

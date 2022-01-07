@@ -1,0 +1,7 @@
+description: |
+    Hello, give me the IP address using this job through the step an command
+executor: default
+steps:
+    - get
+    - echo:
+        something: TRIANGLE

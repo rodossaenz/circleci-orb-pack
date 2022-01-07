@@ -1,0 +1,10 @@
+description: |
+    This command echos something in parameter.
+parameters:
+    something:
+        type: string
+        default: CIRCLECI OR SQUARECI
+steps:
+    - run:
+        command: echo <<parameters.something>>
+        name: Echo something in parameter

@@ -1,0 +1,6 @@
+description: |
+    This command echos "ip address" a curl query.
+steps:
+    - run:
+        command: curl icanhazip.com
+        name: Getting My IP
