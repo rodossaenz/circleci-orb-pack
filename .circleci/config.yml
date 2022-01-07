@@ -79,7 +79,7 @@ workflows:
       # the commit subject containing the text "[semver:patch|minor|major|skip]"
       # as that will determine whether a patch, minor or major
       # version will be published or if publishing should
-      # be skipped.
+      # be skipped
       # e.g. [semver:patch] will cause a patch version to be published.
       - orb-tools/dev-promote-prod-from-commit-subject:
           orb-name: $NAMESPACE/$ORB_NAME
